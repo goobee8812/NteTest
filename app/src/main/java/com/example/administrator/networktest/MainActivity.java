@@ -2,6 +2,7 @@ package com.example.administrator.networktest;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -16,6 +17,7 @@ import java.net.URL;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     TextView responseText = null;
     Button send_request = null;
+    private static final String TAG = "MainActivity";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -27,23 +29,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()){
-            case R.id.send_request_btn:
-                sendRequestWithHttpURLConnection();
-                break;
-            default:
-                break;
+//        switch (view.getId()){
+//            case R.id.send_request_btn:
+//                sendRequestWithHttpURLConnection();
+//                break;
+//            default:
+//                break;
+//        }
+        if(view.getId() == R.id.send_request_btn){
+            sendRequestWithHttpURLConnection();
         }
     }
     private void sendRequestWithHttpURLConnection(){
         //开启线程来发起网络请求
+        Log.d(TAG, "sendRequestWithHttpURLConnection: -----------------");
         new Thread(new Runnable() {
             @Override
             public void run() {
                 HttpURLConnection connection = null;
                 BufferedReader reader = null;
                 try {
-                    URL url = new URL("http://www.baidu.com");
+                    URL url = new URL("https://www.jd.com");
                     connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("GET");
                     connection.setConnectTimeout(8000);
@@ -55,8 +61,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     String line;
                     while ((line = reader.readLine()) != null){
                         response.append(line);
-                    }showResponse(response.toString());
-                }  catch (IOException e) {
+                    }
+                    Log.d(TAG, "run: -----show" + response.toString());
+                    showResponse(response.toString());
+                }catch (IOException e) {
                     e.printStackTrace();
                 }finally {
                     if(reader != null){
@@ -71,15 +79,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
                 }
             }
-        });
+        }).start();
     }
 
-    private void showResponse(final String response) {
+    private void showResponse(final String s) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 //在这里进行UI操作
-                responseText.setText(response);
+                responseText.setText(s);
+                Log.d(TAG, "run: TextViewShow--------");
             }
         });
     }
