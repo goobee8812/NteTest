@@ -1,5 +1,6 @@
 package com.example.administrator.networktest;
 
+import android.app.DownloadManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,6 +14,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     TextView responseText = null;
@@ -30,50 +35,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view) {
         if(view.getId() == R.id.send_request_btn){
-            sendRequestWithHttpURLConnection();
+            sendRequestWithOkHttp();
         }
     }
-    private void sendRequestWithHttpURLConnection(){
-        //开启线程来发起网络请求
-        Log.d(TAG, "sendRequestWithHttpURLConnection: -----------------");
+
+    private void sendRequestWithOkHttp() {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                HttpURLConnection connection = null;
-                BufferedReader reader = null;
                 try {
-                    URL url = new URL("https://www.jd.com");
-                    connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("GET");
-                    connection.setConnectTimeout(8000);
-                    connection.setReadTimeout(8100);
-                    InputStream in = connection.getInputStream();
-                    //下面对获取到的输入流进行读取
-                    reader = new BufferedReader(new InputStreamReader(in));
-                    StringBuilder response = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null){
-                        response.append(line);
-                    }
-                    Log.d(TAG, "run: -----show" + response.toString());
-                    showResponse(response.toString());
-                }catch (IOException e) {
+                    OkHttpClient client = new OkHttpClient();
+                    Request request = new Request.Builder()
+                            .url("http://www.baidu.com")
+                            .build();
+                    Response response = client.newCall(request).execute();
+                    String responseData = response.body().string();
+                    showResponse(responseData);
+                } catch (IOException e) {
                     e.printStackTrace();
-                }finally {
-                    if(reader != null){
-                        try{
-                            reader.close();
-                        }catch (IOException e){
-                            e.printStackTrace();
-                        }
-                    }
-                    if(connection != null){
-                        connection.disconnect();
-                    }
                 }
             }
         }).start();
     }
+
 
     private void showResponse(final String s) {
         runOnUiThread(new Runnable() {
