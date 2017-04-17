@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Response response = client.newCall(request).execute();
                     String responseData = response.body().string();
                     parseXMLWithPull(responseData);
-                    //showResponse(responseData);
+                    showResponse(responseData);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
