@@ -7,12 +7,20 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
+
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.StringReader;
+import java.util.List;
+
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     TextView responseText = null;
@@ -29,57 +37,80 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View view) {
-//        switch (view.getId()){
-//            case R.id.send_request_btn:
-//                sendRequestWithHttpURLConnection();
-//                break;
-//            default:
-//                break;
-//        }
         if(view.getId() == R.id.send_request_btn){
-            sendRequestWithHttpURLConnection();
+            sendRequestWithOkHttp();
         }
     }
-    private void sendRequestWithHttpURLConnection(){
-        //开启线程来发起网络请求
-        Log.d(TAG, "sendRequestWithHttpURLConnection: -----------------");
+
+    private void sendRequestWithOkHttp() {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                HttpURLConnection connection = null;
-                BufferedReader reader = null;
                 try {
-                    URL url = new URL("https://www.jd.com");
-                    connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("GET");
-                    connection.setConnectTimeout(8000);
-                    connection.setReadTimeout(8100);
-                    InputStream in = connection.getInputStream();
-                    //下面对获取到的输入流进行读取
-                    reader = new BufferedReader(new InputStreamReader(in));
-                    StringBuilder response = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null){
-                        response.append(line);
-                    }
-                    Log.d(TAG, "run: -----show" + response.toString());
-                    showResponse(response.toString());
-                }catch (IOException e) {
+                    OkHttpClient client = new OkHttpClient();
+                    Request request = new Request.Builder()
+                            .url("http://10.0.2.2/get_data.json") //指定访问的服务器地址是电脑本机
+                            .build();
+                    Response response = client.newCall(request).execute();
+                    String responseData = response.body().string();
+                    //parseXMLWithPull(responseData);
+                    parseJSONWithGSON(responseData);
+                    showResponse(responseData);
+                } catch (IOException e) {
                     e.printStackTrace();
-                }finally {
-                    if(reader != null){
-                        try{
-                            reader.close();
-                        }catch (IOException e){
-                            e.printStackTrace();
-                        }
-                    }
-                    if(connection != null){
-                        connection.disconnect();
-                    }
                 }
             }
         }).start();
+    }
+
+    private void parseJSONWithGSON(String jsonData) {
+        Gson gson = new Gson();
+        List<App> appList = gson.fromJson(jsonData, new TypeToken<List<App>>() {
+        }.getType());
+        for(App app : appList){
+            Log.d(TAG, "id is " + app.getId());
+            Log.d(TAG, "name is " + app.getName());
+            Log.d(TAG, "version is " + app.getVersion());
+        }
+    }
+    private void parseXMLWithPull(String xmlData){
+        try{
+            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+            XmlPullParser xmlPullParser = factory.newPullParser();
+            xmlPullParser.setInput(new StringReader(xmlData));
+            int eventType = xmlPullParser.getEventType();
+            String id = "";
+            String name = "";
+            String version = "";
+            while (eventType != XmlPullParser.END_DOCUMENT){
+                String nodeName = xmlPullParser.getName();
+                switch (eventType){
+                    //开始解析某个节点
+                    case XmlPullParser.START_TAG:
+                        if("id".equals(nodeName)){
+                            id = xmlPullParser.nextText();
+                        }else if("name".equals(nodeName)) {
+                            name = xmlPullParser.nextText();
+                        }else if("version".equals(nodeName)){
+                            version = xmlPullParser.nextText();
+                        }
+                        break;
+                    //完成解析某个节点
+                    case XmlPullParser.END_TAG:
+                        if("app".equals(nodeName)){
+                            Log.d(TAG, "id is " +id);
+                            Log.d(TAG, "name is " +name);
+                            Log.d(TAG, "version is " +version);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                eventType = xmlPullParser.next();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void showResponse(final String s) {
