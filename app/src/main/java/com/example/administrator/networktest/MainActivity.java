@@ -7,12 +7,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.List;
 
 
 import okhttp3.OkHttpClient;
@@ -46,11 +49,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 try {
                     OkHttpClient client = new OkHttpClient();
                     Request request = new Request.Builder()
-                            .url("http://10.0.2.2/get_data.xml") //指定访问的服务器地址是电脑本机
+                            .url("http://10.0.2.2/get_data.json") //指定访问的服务器地址是电脑本机
                             .build();
                     Response response = client.newCall(request).execute();
                     String responseData = response.body().string();
-                    parseXMLWithPull(responseData);
+                    //parseXMLWithPull(responseData);
+                    parseJSONWithGSON(responseData);
                     showResponse(responseData);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -59,6 +63,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }).start();
     }
 
+    private void parseJSONWithGSON(String jsonData) {
+        Gson gson = new Gson();
+        List<App> appList = gson.fromJson(jsonData, new TypeToken<List<App>>() {
+        }.getType());
+        for(App app : appList){
+            Log.d(TAG, "id is " + app.getId());
+            Log.d(TAG, "name is " + app.getName());
+            Log.d(TAG, "version is " + app.getVersion());
+        }
+    }
     private void parseXMLWithPull(String xmlData){
         try{
             XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
